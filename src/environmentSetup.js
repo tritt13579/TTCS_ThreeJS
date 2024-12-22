@@ -42,6 +42,29 @@ export async function addTreesAround(scene, data) {
           break;
         }
       }
+
+      // Check distance from edge midpoints
+      for (const edge of data.edges) {
+        const sourceNode = data.nodes.find((node) => node.id === edge.source);
+        const targetNode = data.nodes.find((node) => node.id === edge.target);
+
+        if (sourceNode && targetNode) {
+          const midpoint = {
+            x: (sourceNode.position.x + targetNode.position.x) / 2,
+            z: (sourceNode.position.z + targetNode.position.z) / 2,
+          };
+
+          const distance = Math.sqrt(
+            Math.pow(position.x - midpoint.x, 2) +
+              Math.pow(position.z - midpoint.z, 2)
+          );
+
+          if (distance < minDistance) {
+            validPosition = false;
+            break;
+          }
+        }
+      }
     }
 
     try {

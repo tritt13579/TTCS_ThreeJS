@@ -8,13 +8,168 @@
       body {
         margin: 0;
         overflow: hidden;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(to bottom, #f8f5e8, #ded9c6);
       }
+
       canvas {
         display: block;
+      }
+
+      .controls {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: rgba(255, 255, 255, 0.95);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        padding: 15px;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+        max-width: 280px;
+      }
+
+      .controls label {
+        font-weight: bold;
+        color: #333;
+        margin-bottom: 5px;
+      }
+
+      .controls select,
+      .controls input[type="file"],
+      .controls button {
+        font-size: 14px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        /* width: 90%; */
+        transition: all 0.3s ease;
+        background: #fff;
+      }
+
+      .controls select:hover,
+      .controls input[type="file"]:hover,
+      .controls button:hover {
+        border-color: #d9c6a5;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+      }
+
+      .controls button {
+        background: linear-gradient(to right, #ff8c42, #ff632f);
+        color: #fff;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      .controls button:active {
+        transform: scale(0.98);
+      }
+
+      .controls.minimized {
+        padding: 5px;
+        max-width: 50px;
+        gap: 5px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+      }
+
+      .controls.minimized label,
+      .controls.minimized select,
+      .controls.minimized input,
+      .controls.minimized button {
+        display: none;
+      }
+
+      .controls.minimized::after {
+        content: "⚙️"; /* Biểu tượng cài đặt */
+        font-size: 20px;
+        color: #333;
+        cursor: pointer;
+      }
+
+      /* Nút đóng mở nhỏ ở góc trên bên phải */
+      .toggle-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 40px;
+      }
+
+      .toggle-btn:hover {
+        color: #ff632f;
       }
     </style>
   </head>
   <body>
+    <div class="controls">
+      <button class="toggle-btn" id="toggle-button">✖</button>
+      <!-- Nút đóng mở nhỏ -->
+      <label for="file-input">Upload Graph Data</label>
+      <input type="file" id="file-input" accept=".json" />
+
+      <label for="start-node">Select Start Node</label>
+      <select id="start-node">
+        <option value="">Select Start Node</option>
+      </select>
+
+      <label for="end-node">Select End Node</label>
+      <select id="end-node">
+        <option value="">Select End Node</option>
+      </select>
+
+      <button id="play-button">Play Animation</button>
+    </div>
     <script type="module" src="/src/index.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const controls = document.querySelector(".controls");
+        const playButton = document.getElementById("play-button");
+        const toggleButton = document.getElementById("toggle-button");
+
+        // Hiệu ứng mở rộng
+        const expandControls = () => {
+          controls.classList.remove("minimized");
+          controls.style.transition = "all 0.3s ease"; // Thêm hiệu ứng mượt
+        };
+
+        // Hiệu ứng thu nhỏ
+        const minimizeControls = () => {
+          controls.classList.add("minimized");
+          controls.style.transition = "all 0.3s ease"; // Thêm hiệu ứng mượt
+        };
+
+        // Thu nhỏ controls khi nhấn nút Play
+        playButton.addEventListener("click", () => {
+          minimizeControls();
+        });
+
+        // Mở rộng lại controls khi nhấn vào controls (ngăn sự kiện từ các phần tử con)
+        controls.addEventListener("click", (event) => {
+          if (controls.classList.contains("minimized")) {
+            if (event.target !== playButton) {
+              expandControls();
+            }
+          }
+        });
+
+        // Ngừng sự kiện click từ các phần tử con để ngăn lan truyền
+        const inputs = controls.querySelectorAll("input, select, button");
+        inputs.forEach((input) => {
+          input.addEventListener("click", (event) => {
+            event.stopPropagation();
+          });
+        });
+
+        // Đóng/mở controls khi nhấn vào nút Toggle
+        toggleButton.addEventListener("click", () => {
+          if (controls.classList.contains("minimized")) {
+            expandControls();
+          } else {
+            minimizeControls();
+          }
+        });
+      });
+    </script>
   </body>
 </html>

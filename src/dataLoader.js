@@ -1,9 +1,16 @@
-import data from "./graph.json";
-
-export function loadData() {
-  return new Promise((resolve) => {
-    // If data needs async loading in the future, this provides flexibility
-    resolve(data);
+export async function loadData(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const json = JSON.parse(reader.result);
+        resolve(json);
+      } catch (error) {
+        reject("Invalid JSON file");
+      }
+    };
+    reader.onerror = () => reject("File could not be read");
+    reader.readAsText(file);
   });
 }
 
