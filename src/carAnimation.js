@@ -22,14 +22,26 @@ export async function animateCar(scene, data, path) {
     return;
   }
 
-  const pathEdges = [];
-  const pathDirections = [];
+  // Kiểm tra nếu không có đường đi hợp lệ
+  if (!path || path.length < 2) {
+    console.error("Invalid path: Path is empty or too short.");
+    alert("No valid path for the car to follow.");
+    return;
+  }
 
+  // Xử lý đường đi
+  const pathEdges = [];
   for (let i = 0; i < path.length - 1; i++) {
     const sourceNode = data.nodes.find((node) => node.id === path[i]);
     const targetNode = data.nodes.find((node) => node.id === path[i + 1]);
 
-    // Tạo đường cong Bezier để làm mượt việc chuyển động giữa các node
+    if (!sourceNode || !targetNode) {
+      console.error(`Node not found: ${path[i]} or ${path[i + 1]}`);
+      alert("Path contains invalid nodes.");
+      return;
+    }
+
+    // Tạo đường cong Bezier
     const controlPoint = new THREE.Vector3(
       (sourceNode.position.x + targetNode.position.x) / 2,
       5,
@@ -47,55 +59,40 @@ export async function animateCar(scene, data, path) {
       points[1],
       points[2]
     );
-    const curvePoints = curve.getPoints(150);
-    pathEdges.push(curvePoints);
-
-    // Tính toán hướng của đoạn đường
-    const direction = new THREE.Vector3()
-      .subVectors(targetNode.position, sourceNode.position)
-      .normalize();
-    pathDirections.push(direction);
+    pathEdges.push(...curve.getPoints(150)); // Sử dụng nhiều điểm để mượt
   }
 
-  let segmentIndex = 0;
-  let pointIndex = 0;
-  let currentRotation = 0;
+  let currentIndex = 0; // Điểm hiện tại trong đường dẫn
 
+  // Hàm animate
   function animate() {
-    if (segmentIndex >= pathEdges.length) return;
+    if (currentIndex >= pathEdges.length) {
+      console.log("Animation completed.");
+      return;
+    }
 
-    const points = pathEdges[segmentIndex];
-    const point = points[pointIndex];
+    // Cập nhật vị trí xe
+    const currentPoint = pathEdges[currentIndex];
+    car.position.set(currentPoint.x, currentPoint.y, currentPoint.z);
 
-    // Di chuyển xe
-    car.position.set(point.x, 5, point.z);
-
-    // Tính toán và làm mượt việc xoay xe
-    if (pointIndex < points.length - 1) {
-      const nextPoint = points[pointIndex + 1];
+    // Tính toán hướng xe
+    if (currentIndex < pathEdges.length - 1) {
+      const nextPoint = pathEdges[currentIndex + 1];
       const direction = new THREE.Vector3()
-        .subVectors(nextPoint, point)
+        .subVectors(nextPoint, currentPoint)
         .normalize();
 
-      // Tính góc xoay mới
       const targetRotation = Math.atan2(direction.x, direction.z);
-
-      // Làm mượt việc xoay xe
-      const rotationSpeed = 0.1; // Tốc độ xoay, điều chỉnh để phù hợp
-      currentRotation += (targetRotation - currentRotation) * rotationSpeed;
-
-      car.rotation.y = currentRotation;
+      const rotationSpeed = 0.1; // Tốc độ quay của xe
+      car.rotation.y += rotationSpeed * (targetRotation - car.rotation.y);
+      // car.rotation.y = targetRotation;
     }
 
-    pointIndex++;
-    if (pointIndex >= points.length) {
-      segmentIndex++;
-      pointIndex = 0;
-    }
-
-    requestAnimationFrame(animate);
+    currentIndex++;
+    requestAnimationFrame(animate); // Gọi lại animate
   }
 
+  // Bắt đầu animation
   animate();
 }
 

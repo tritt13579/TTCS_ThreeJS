@@ -2,7 +2,7 @@ import { initScene } from "./scene.js";
 import { loadData } from "./dataLoader.js";
 import { displayNodes, displayEdges } from "./graphVisualizer.js";
 import { addTreesAround } from "./environmentSetup.js";
-import { dijkstra } from "./graph.js";
+import { dijkstra, johnson, floydWarshall } from "./graph.js";
 import { animateCar } from "./carAnimation.js";
 
 let currentData = null;
@@ -70,6 +70,7 @@ function populateNodeDropdowns(data) {
 async function handlePlayAnimation() {
   const startNode = document.getElementById("start-node").value;
   const endNode = document.getElementById("end-node").value;
+  const algorithm = document.getElementById("algorithm-select").value;
 
   if (!currentData || !startNode || !endNode) {
     alert("Please select both start and end nodes.");
@@ -77,7 +78,18 @@ async function handlePlayAnimation() {
   }
 
   try {
-    const path = dijkstra(currentData, startNode, endNode);
+    let path = null;
+
+    if (algorithm === "dijkstra") {
+      path = dijkstra(currentData, startNode, endNode);
+    } else if (algorithm === "johnson") {
+      const allPairsShortestPaths = johnson(currentData);
+      path = allPairsShortestPaths[startNode]?.[endNode] || null;
+    } else if (algorithm === "floyd-warshall") {
+      const { paths } = floydWarshall(currentData);
+      path = paths[startNode][endNode] || null;
+    }
+
     if (path) {
       await animateCar(scene, currentData, path);
     } else {
