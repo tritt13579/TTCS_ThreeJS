@@ -15,21 +15,21 @@ export async function animateCar(scene, data, path) {
   // Load the 3D car model
   try {
     car = await loadCarModel(carLoader);
-    car.name = "animatedCar"; // Đặt tên cho xe
+    car.name = "animatedCar";
     scene.add(car);
   } catch (error) {
     console.error("Error loading car model:", error);
     return;
   }
 
-  // Kiểm tra nếu không có đường đi hợp lệ
+  // Kiểm tra đường đi hợp lệ
   if (!path || path.length < 2) {
     console.error("Invalid path: Path is empty or too short.");
     alert("No valid path for the car to follow.");
     return;
   }
 
-  // Xử lý đường đi
+  // Xử lý đường đi với đường cong Bezier
   const pathEdges = [];
   for (let i = 0; i < path.length - 1; i++) {
     const sourceNode = data.nodes.find((node) => node.id === path[i]);
@@ -41,59 +41,98 @@ export async function animateCar(scene, data, path) {
       return;
     }
 
-    // Tạo đường cong Bezier
-    const controlPoint = new THREE.Vector3(
+    // Tính toán điểm điều khiển cho đường cong Bezier
+    const midPoint = new THREE.Vector3(
       (sourceNode.position.x + targetNode.position.x) / 2,
       5,
       (sourceNode.position.z + targetNode.position.z) / 2
     );
 
-    const points = [
-      new THREE.Vector3(sourceNode.position.x, 5, sourceNode.position.z),
-      controlPoint,
-      new THREE.Vector3(targetNode.position.x, 5, targetNode.position.z),
-    ];
-
+    // Tạo đường cong Bezier
     const curve = new THREE.QuadraticBezierCurve3(
-      points[0],
-      points[1],
-      points[2]
+      new THREE.Vector3(sourceNode.position.x, 5, sourceNode.position.z),
+      midPoint,
+      new THREE.Vector3(targetNode.position.x, 5, targetNode.position.z)
     );
-    pathEdges.push(...curve.getPoints(150)); // Sử dụng nhiều điểm để mượt
+
+    // Thêm các điểm vào pathEdges
+    const curvePoints = curve.getPoints(200);
+    pathEdges.push(...curvePoints);
   }
 
-  let currentIndex = 0; // Điểm hiện tại trong đường dẫn
+  // Kiểm tra nếu không có điểm nào được tạo
+  if (pathEdges.length < 2) {
+    console.error("No valid path points generated");
+    return;
+  }
 
-  // Hàm animate
+  let currentIndex = 0;
+  let currentRotation = 0;
+  const rotationLerpFactor = 0.05;
+  const moveSpeed = 0.8;
+  let animationId = null; // Để lưu ID của animation frame
+
   function animate() {
-    if (currentIndex >= pathEdges.length) {
+    // Kiểm tra điều kiện dừng
+    if (currentIndex >= pathEdges.length - 1) {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+      }
       console.log("Animation completed.");
       return;
     }
 
-    // Cập nhật vị trí xe
-    const currentPoint = pathEdges[currentIndex];
+    // Lấy điểm hiện tại và điểm tiếp theo
+    const currentPoint = pathEdges[Math.floor(currentIndex)];
+    const nextPoint =
+      pathEdges[Math.min(Math.floor(currentIndex) + 1, pathEdges.length - 1)];
+
+    // Kiểm tra tính hợp lệ của các điểm
+    if (!currentPoint || !nextPoint) {
+      console.error("Invalid path points");
+      cancelAnimationFrame(animationId);
+      return;
+    }
+
+    // Di chuyển xe
     car.position.set(currentPoint.x, currentPoint.y, currentPoint.z);
 
     // Tính toán hướng xe
-    if (currentIndex < pathEdges.length - 1) {
-      const nextPoint = pathEdges[currentIndex + 1];
-      const direction = new THREE.Vector3()
-        .subVectors(nextPoint, currentPoint)
-        .normalize();
+    const direction = new THREE.Vector3()
+      .subVectors(nextPoint, currentPoint)
+      .normalize();
 
-      const targetRotation = Math.atan2(direction.x, direction.z);
-      const rotationSpeed = 0.1; // Tốc độ quay của xe
-      car.rotation.y += rotationSpeed * (targetRotation - car.rotation.y);
-      // car.rotation.y = targetRotation;
-    }
+    // Tính góc quay mục tiêu
+    const targetRotation = Math.atan2(direction.x, direction.z);
 
-    currentIndex++;
-    requestAnimationFrame(animate); // Gọi lại animate
+    // Xử lý việc quay xe mượt mà
+    let rotationDiff = targetRotation - currentRotation;
+
+    // Xử lý trường hợp quay qua 180 độ
+    if (rotationDiff > Math.PI) rotationDiff -= Math.PI * 2;
+    if (rotationDiff < -Math.PI) rotationDiff += Math.PI * 2;
+
+    // Áp dụng lerp cho góc quay
+    currentRotation += rotationDiff * rotationLerpFactor;
+    car.rotation.y = currentRotation;
+
+    // Điều chỉnh tốc độ dựa trên góc quay
+    const speedMultiplier = Math.abs(rotationDiff) > Math.PI / 4 ? 0.5 : 1;
+    currentIndex += moveSpeed * speedMultiplier;
+
+    // Tiếp tục animation
+    animationId = requestAnimationFrame(animate);
   }
 
   // Bắt đầu animation
   animate();
+
+  // Return một hàm cleanup để có thể dừng animation khi cần
+  return () => {
+    if (animationId) {
+      cancelAnimationFrame(animationId);
+    }
+  };
 }
 
 // Helper function to load car model
