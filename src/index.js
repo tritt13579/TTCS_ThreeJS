@@ -1,7 +1,7 @@
 import { initScene } from "./scene.js";
 import { loadData } from "./dataLoader.js";
 import { displayNodes, displayEdges } from "./graphVisualizer.js";
-import { addTreesAround } from "./environmentSetup.js";
+import { addTreesAround, createSnow } from "./environmentSetup.js";
 import { dijkstra, johnson, floydWarshall } from "./graph.js";
 import { animateCar } from "./carAnimation.js";
 
@@ -9,6 +9,10 @@ let currentData = null;
 let scene = null;
 let camera = null;
 let renderer = null;
+let controls = null;
+let nodeLabels = [];
+let edgeWeights = [];
+let updateSnowEffect;
 
 async function init(data) {
   try {
@@ -20,17 +24,33 @@ async function init(data) {
     scene = sceneSetup.scene;
     camera = sceneSetup.camera;
     renderer = sceneSetup.renderer;
+    controls = sceneSetup.controls;
+
+    nodeLabels = await displayNodes(scene, data, camera);
+    edgeWeights = await displayEdges(scene, data, camera);
 
     // Display graph elements
-    await displayNodes(scene, data, camera);
-    displayEdges(scene, data, camera);
+    // await displayNodes(scene, data, camera);
+    // displayEdges(scene, data, camera);
 
     // Add environmental elements
     await addTreesAround(scene, data);
+    updateSnowEffect = createSnow(scene);
 
     // Render loop
     function animate() {
       requestAnimationFrame(animate);
+      updateSnowEffect();
+      // Update node labels to face the camera
+      nodeLabels.forEach((labelMesh) => {
+        labelMesh.quaternion.copy(camera.quaternion);
+      });
+
+      // Update edge weights to face the camera
+      edgeWeights.forEach((textMesh) => {
+        textMesh.quaternion.copy(camera.quaternion);
+      });
+      controls.update();
       renderer.render(scene, camera);
     }
     animate();

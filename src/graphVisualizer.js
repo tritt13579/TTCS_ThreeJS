@@ -4,13 +4,15 @@ import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 import { applyForceDirectedLayout } from "./dataLoader.js";
 
+let nodeLabels = []; // Mảng lưu các nhãn node
+let edgeWeights = []; // Mảng lưu các trọng số cạnh
+
 export async function displayNodes(scene, data, camera) {
   applyForceDirectedLayout(data);
 
   const houseLoader = new GLTFLoader();
   const fontLoader = new FontLoader();
 
-  // Load font once to use for all labels
   const font = await new Promise((resolve, reject) => {
     fontLoader.load(
       "/fonts/helvetiker_regular.typeface.json",
@@ -33,23 +35,24 @@ export async function displayNodes(scene, data, camera) {
       // Add label above the house
       const labelGeometry = new TextGeometry(node.id, {
         font: font,
-        size: 7, // Kích thước văn bản
-        depth: 1, // Độ dày văn bản
+        size: 7,
+        depth: 1,
         curveSegments: 12,
       });
-      const labelMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff }); // Màu xanh cho chữ
+      const labelMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
       const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
 
-      // Đặt vị trí văn bản phía trên ngôi nhà
+      // Set label position above the house
       labelMesh.position.set(position.x, position.y + 24, position.z);
 
-      labelMesh.rotation.x = -Math.PI / 4; // Nghiêng 45 độ trên trục X
-
+      // Add label to scene and store it
       scene.add(labelMesh);
+      nodeLabels.push(labelMesh); // Lưu nhãn node
     } catch (err) {
       console.error(`Cannot display node ${node.id}:`, err);
     }
   }
+  return nodeLabels; // Trả về mảng nhãn node
 }
 
 function loadHouseModel(loader, position) {
@@ -58,8 +61,9 @@ function loadHouseModel(loader, position) {
       "/models/house.glb",
       (gltf) => {
         const house = gltf.scene;
+        const bbox = new THREE.Box3().setFromObject(house);
         house.scale.set(48, 48, 48);
-        house.position.set(position.x, position.y, position.z);
+        house.position.set(position.x, -5, position.z);
         resolve(house);
       },
       undefined,
@@ -74,14 +78,12 @@ function loadHouseModel(loader, position) {
 export function displayEdges(scene, data, camera) {
   const fontLoader = new FontLoader();
 
-  // Load font for displaying weights
   fontLoader.load("/fonts/helvetiker_regular.typeface.json", (font) => {
     data.edges.forEach((edge) => {
       const sourceNode = data.nodes.find((node) => node.id === edge.source);
       const targetNode = data.nodes.find((node) => node.id === edge.target);
 
       if (sourceNode && targetNode) {
-        // Tạo một đường thẳng từ nguồn đến đích
         const points = [
           new THREE.Vector3(sourceNode.position.x, 5, sourceNode.position.z),
           new THREE.Vector3(targetNode.position.x, 5, targetNode.position.z),
@@ -93,33 +95,30 @@ export function displayEdges(scene, data, camera) {
 
         scene.add(line);
 
-        // Vị trí trung tâm cạnh để đặt trọng số
         const midpoint = new THREE.Vector3(
           (sourceNode.position.x + targetNode.position.x) / 2,
-          2, // Đặt gần mặt đất
+          2,
           (sourceNode.position.z + targetNode.position.z) / 2
         );
 
-        // Tạo đối tượng văn bản để hiển thị trọng số
         const textGeometry = new TextGeometry(edge.weight.toString(), {
           font: font,
-          size: 7, // Tăng kích thước văn bản để dễ đọc
+          size: 7,
           depth: 1,
           curveSegments: 12,
         });
-        const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Màu đen cho trọng số
+        const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
-        // Đặt vị trí trọng số
         textMesh.position.set(midpoint.x, midpoint.y, midpoint.z);
 
-        // Hướng trọng số luôn đối diện camera
-        textMesh.quaternion.copy(camera.quaternion);
-
+        // Add text to scene and store it
         scene.add(textMesh);
+        edgeWeights.push(textMesh); // Lưu trọng số cạnh
       } else {
         console.warn(`Cannot find node for edge:`, edge);
       }
     });
   });
+  return edgeWeights; // Trả về mảng trọng số cạnh
 }
