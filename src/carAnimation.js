@@ -4,6 +4,18 @@ import * as THREE from "three";
 export async function animateCar(scene, data, path) {
   const carLoader = new GLTFLoader();
   let car;
+  let baseSpeed = 1.2;
+  let speedMultiplier = 1;
+
+  // Get speed control elements
+  const speedControl = document.getElementById("speed-control");
+  const speedValue = document.getElementById("speed-value");
+
+  // Update speed multiplier when slider changes
+  speedControl.addEventListener("input", (e) => {
+    speedMultiplier = parseFloat(e.target.value);
+    speedValue.textContent = `${speedMultiplier}x`;
+  });
 
   // Xóa xe cũ trước khi tạo xe mới
   const existingCar = scene.getObjectByName("animatedCar");
@@ -55,8 +67,8 @@ export async function animateCar(scene, data, path) {
       new THREE.Vector3(targetNode.position.x, 5, targetNode.position.z)
     );
 
-    // Thêm các điểm vào pathEdges
-    const curvePoints = curve.getPoints(200);
+    // Giảm số điểm trên đường cong để tăng tốc độ
+    const curvePoints = curve.getPoints(100); // Giảm từ 200 xuống 100 điểm
     pathEdges.push(...curvePoints);
   }
 
@@ -68,9 +80,8 @@ export async function animateCar(scene, data, path) {
 
   let currentIndex = 0;
   let currentRotation = 0;
-  const rotationLerpFactor = 0.05;
-  const moveSpeed = 0.8;
-  let animationId = null; // Để lưu ID của animation frame
+  const rotationLerpFactor = 0.1;
+  let animationId = null;
 
   function animate() {
     // Kiểm tra điều kiện dừng
@@ -116,9 +127,10 @@ export async function animateCar(scene, data, path) {
     currentRotation += rotationDiff * rotationLerpFactor;
     car.rotation.y = currentRotation;
 
-    // Điều chỉnh tốc độ dựa trên góc quay
-    const speedMultiplier = Math.abs(rotationDiff) > Math.PI / 4 ? 0.5 : 1;
-    currentIndex += moveSpeed * speedMultiplier;
+    // Điều chỉnh tốc độ dựa trên góc quay và speed multiplier
+    const turnSpeedMultiplier = Math.abs(rotationDiff) > Math.PI / 4 ? 0.7 : 1; // Tăng tốc độ khi rẽ
+    const finalSpeed = baseSpeed * turnSpeedMultiplier * speedMultiplier;
+    currentIndex += finalSpeed;
 
     // Tiếp tục animation
     animationId = requestAnimationFrame(animate);
@@ -132,17 +144,18 @@ export async function animateCar(scene, data, path) {
     if (animationId) {
       cancelAnimationFrame(animationId);
     }
+    // Remove event listener when animation is cleaned up
+    speedControl.removeEventListener("input");
   };
 }
 
-// Helper function to load car model
 function loadCarModel(loader) {
   return new Promise((resolve, reject) => {
     loader.load(
       "/models/car.glb",
       (gltf) => {
         const car = gltf.scene;
-        car.scale.set(10, 10, 10); // Adjust scale as needed
+        car.scale.set(10, 10, 10);
         car.traverse((child) => {
           if (child.isMesh) {
             child.castShadow = true;

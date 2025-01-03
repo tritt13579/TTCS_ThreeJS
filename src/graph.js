@@ -1,14 +1,12 @@
 export function johnson(graph) {
   const { nodes, edges } = graph;
 
-  // Step 1: Add a new node `q` connecting to all existing nodes with weight 0
   const q = { id: "q" };
   const augmentedEdges = [...edges];
   nodes.forEach((node) => {
     augmentedEdges.push({ source: "q", target: node.id, weight: 0 });
   });
 
-  // Step 2: Bellman-Ford to calculate h-values
   const h = {};
   nodes.concat(q).forEach((node) => (h[node.id] = Infinity));
   h[q.id] = 0;
@@ -21,21 +19,18 @@ export function johnson(graph) {
     });
   }
 
-  // Check for negative-weight cycles
   for (const { source, target, weight } of augmentedEdges) {
     if (h[source] + weight < h[target]) {
       throw new Error("Graph contains a negative-weight cycle");
     }
   }
 
-  // Step 3: Reweight edges
   const reweightedEdges = edges.map(({ source, target, weight }) => ({
     source,
     target,
     weight: weight + h[source] - h[target],
   }));
 
-  // Step 4: Run Dijkstra for each node
   const shortestPaths = {};
   const pathMap = {};
   nodes.forEach((node) => {
@@ -47,7 +42,6 @@ export function johnson(graph) {
     pathMap[node.id] = paths;
   });
 
-  // Adjust distances and paths back using h-values
   Object.keys(shortestPaths).forEach((u) => {
     Object.keys(shortestPaths[u]).forEach((v) => {
       if (shortestPaths[u][v] !== Infinity) {
@@ -170,6 +164,7 @@ export function dijkstra(graph, start, end = null) {
     return distances;
   }
 }
+
 export function floydWarshall(graph) {
   const { nodes, edges } = graph;
   const distance = {};
@@ -191,6 +186,9 @@ export function floydWarshall(graph) {
     if (distance[source] && distance[target]) {
       distance[source][target] = weight;
       next[source][target] = target;
+
+      distance[target][source] = weight;
+      next[target][source] = source;
     }
   });
 

@@ -47,7 +47,7 @@ export async function displayNodes(scene, data, camera) {
 
       // Add label to scene and store it
       scene.add(labelMesh);
-      nodeLabels.push(labelMesh); // Lưu nhãn node
+      nodeLabels.push(labelMesh);
     } catch (err) {
       console.error(`Cannot display node ${node.id}:`, err);
     }

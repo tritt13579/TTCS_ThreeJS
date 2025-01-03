@@ -4,102 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Graph Visualization</title>
-    <style>
-      body {
-        margin: 0;
-        overflow: hidden;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(to bottom, #f8f5e8, #ded9c6);
-      }
-
-      canvas {
-        display: block;
-      }
-
-      .controls {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        background: rgba(255, 255, 255, 0.95);
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-        padding: 15px;
-        border-radius: 8px;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        max-width: 280px;
-      }
-
-      .controls label {
-        font-weight: bold;
-        color: #333;
-        margin-bottom: 5px;
-      }
-
-      .controls select,
-      .controls input[type="file"],
-      .controls button {
-        font-size: 14px;
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 5px;
-        /* width: 90%; */
-        transition: all 0.3s ease;
-        background: #fff;
-      }
-
-      .controls select:hover,
-      .controls input[type="file"]:hover,
-      .controls button:hover {
-        border-color: #d9c6a5;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-      }
-
-      .controls button {
-        background: linear-gradient(to right, #ff8c42, #ff632f);
-        color: #fff;
-        font-weight: bold;
-        cursor: pointer;
-      }
-
-      .controls button:active {
-        transform: scale(0.98);
-      }
-
-      .controls.minimized {
-        padding: 5px;
-        max-width: 50px;
-        gap: 5px;
-        overflow: hidden;
-        transition: all 0.3s ease;
-      }
-
-      .controls.minimized label,
-      .controls.minimized select,
-      .controls.minimized input,
-      .controls.minimized button {
-        display: none;
-      }
-
-      .controls.minimized::after {
-        content: "⚙️"; /* Biểu tượng cài đặt */
-        font-size: 20px;
-        color: #333;
-        cursor: pointer;
-      }
-
-      /* Nút đóng mở nhỏ ở góc trên bên phải */
-      .toggle-btn {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 40px;
-      }
-
-      .toggle-btn:hover {
-        color: #ff632f;
-      }
-    </style>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/css/style.css" />
   </head>
   <body>
     <div class="controls">
@@ -108,6 +17,9 @@
       <label for="file-input">Upload Graph Data</label>
       <input type="file" id="file-input" accept=".json" />
 
+      <label for="manual-input-btn">Or Enter Data Manually</label>
+      <button id="manual-input-btn">Manual Input</button>
+
       <label for="algorithm-select">Select Algorithm:</label>
       <select id="algorithm-select">
         <option value="dijkstra">Dijkstra</option>
@@ -115,6 +27,15 @@
         <option value="floyd-warshall">Floyd-Warshall</option>
       </select>
 
+      <label for="speed-control">Animation Speed:</label>
+      <input
+        type="range"
+        id="speed-control"
+        min="0.1"
+        max="2"
+        step="0.1"
+        value="1"
+      />
       <label for="start-node">Select Start Node</label>
       <select id="start-node">
         <option value="">Select Start Node</option>
@@ -127,6 +48,58 @@
 
       <button id="play-button">Play Animation</button>
     </div>
+
+    <div id="manual-input-modal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Create Graph Data</h2>
+          <span class="close">&times;</span>
+        </div>
+
+        <div class="modal-body">
+          <div class="input-section nodes-section">
+            <h3>Step 1: Define Number of Nodes</h3>
+            <div class="node-input-container">
+              <label for="total-nodes">Number of Nodes:</label>
+              <div class="number-input-wrapper">
+                <button class="number-control minus">-</button>
+                <input
+                  type="number"
+                  id="total-nodes"
+                  min="2"
+                  max="26"
+                  value="5"
+                />
+                <button class="number-control plus">+</button>
+              </div>
+            </div>
+            <div class="node-preview">
+              <p>
+                Nodes will be created as:
+                <span id="node-preview">A, B, C, D, E</span>
+              </p>
+            </div>
+          </div>
+
+          <div class="input-section edges-section">
+            <h3>Step 2: Define Edges</h3>
+            <div class="edge-controls">
+              <button id="add-edge" class="modern-button">
+                <i class="fas fa-plus"></i> Add Edge
+              </button>
+            </div>
+            <div id="edges-container"></div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="submit-graph" class="modern-button primary">
+            Create Graph
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script type="module" src="/src/index.js"></script>
     <script>
       document.addEventListener("DOMContentLoaded", () => {
@@ -137,13 +110,13 @@
         // Hiệu ứng mở rộng
         const expandControls = () => {
           controls.classList.remove("minimized");
-          controls.style.transition = "all 0.3s ease"; // Thêm hiệu ứng mượt
+          controls.style.transition = "all 0.3s ease";
         };
 
         // Hiệu ứng thu nhỏ
         const minimizeControls = () => {
           controls.classList.add("minimized");
-          controls.style.transition = "all 0.3s ease"; // Thêm hiệu ứng mượt
+          controls.style.transition = "all 0.3s ease";
         };
 
         // Thu nhỏ controls khi nhấn nút Play
