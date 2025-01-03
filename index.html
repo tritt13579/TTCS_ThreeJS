@@ -101,55 +101,5 @@
     </div>
 
     <script type="module" src="/src/index.js"></script>
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
-        const controls = document.querySelector(".controls");
-        const playButton = document.getElementById("play-button");
-        const toggleButton = document.getElementById("toggle-button");
-
-        // Hiệu ứng mở rộng
-        const expandControls = () => {
-          controls.classList.remove("minimized");
-          controls.style.transition = "all 0.3s ease";
-        };
-
-        // Hiệu ứng thu nhỏ
-        const minimizeControls = () => {
-          controls.classList.add("minimized");
-          controls.style.transition = "all 0.3s ease";
-        };
-
-        // Thu nhỏ controls khi nhấn nút Play
-        playButton.addEventListener("click", () => {
-          minimizeControls();
-        });
-
-        // Mở rộng lại controls khi nhấn vào controls (ngăn sự kiện từ các phần tử con)
-        controls.addEventListener("click", (event) => {
-          if (controls.classList.contains("minimized")) {
-            if (event.target !== playButton) {
-              expandControls();
-            }
-          }
-        });
-
-        // Ngừng sự kiện click từ các phần tử con để ngăn lan truyền
-        const inputs = controls.querySelectorAll("input, select, button");
-        inputs.forEach((input) => {
-          input.addEventListener("click", (event) => {
-            event.stopPropagation();
-          });
-        });
-
-        // Đóng/mở controls khi nhấn vào nút Toggle
-        toggleButton.addEventListener("click", () => {
-          if (controls.classList.contains("minimized")) {
-            expandControls();
-          } else {
-            minimizeControls();
-          }
-        });
-      });
-    </script>
   </body>
 </html>
