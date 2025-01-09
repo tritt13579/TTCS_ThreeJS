@@ -37,7 +37,7 @@ export async function displayNodes(scene, data, camera) {
         font: font,
         size: 7,
         depth: 1,
-        curveSegments: 12,
+        curveSegments: 6,
       });
       const labelMaterial = new THREE.MeshBasicMaterial({ color: 0x0000ff });
       const labelMesh = new THREE.Mesh(labelGeometry, labelMaterial);
@@ -105,14 +105,13 @@ export function displayEdges(scene, data, camera) {
           font: font,
           size: 7,
           depth: 1,
-          curveSegments: 12,
+          curveSegments: 6,
         });
         const textMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
         const textMesh = new THREE.Mesh(textGeometry, textMaterial);
 
         textMesh.position.set(midpoint.x, midpoint.y, midpoint.z);
 
-        // Add text to scene and store it
         scene.add(textMesh);
         edgeWeights.push(textMesh); // Lưu trọng số cạnh
       } else {

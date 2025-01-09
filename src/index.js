@@ -30,7 +30,7 @@ async function init(data) {
     controls = sceneSetup.controls;
 
     nodeLabels = await displayNodes(scene, data, camera);
-    edgeWeights = await displayEdges(scene, data, camera);
+    edgeWeights = displayEdges(scene, data, camera);
 
     await addTreesAround(scene, data);
     updateSnowEffect = createSnow(scene);
