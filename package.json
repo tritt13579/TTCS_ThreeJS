@@ -10,6 +10,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@datastructures-js/priority-queue": "^6.3.2",
     "dat.gui": "^0.7.9",
     "three": "^0.171.0"
   },

@@ -1,6 +1,6 @@
 import { initScene } from "./scene.js";
 import { loadData } from "./dataLoader.js";
-import { displayNodes, displayEdges } from "./graphVisualizer.js";
+import { displayNodes, displayEdges, cleanupGraph } from "./graphVisualizer.js";
 import { addTreesAround, createSnow } from "./environmentSetup.js";
 import { dijkstra, johnson, floydWarshall } from "./graph.js";
 import { animateCar } from "./carAnimation.js";
@@ -21,13 +21,23 @@ let updateSnowEffect;
 
 async function init(data) {
   try {
-    currentData = data;
+    // Nếu scene đã tồn tại, cleanup trước
+    if (scene) {
+      cleanupGraph(scene);
 
-    const sceneSetup = initScene();
-    scene = sceneSetup.scene;
-    camera = sceneSetup.camera;
-    renderer = sceneSetup.renderer;
-    controls = sceneSetup.controls;
+      if (updateSnowEffect) {
+        updateSnowEffect = null;
+      }
+    } else {
+      // Khởi tạo scene lần đầu
+      const sceneSetup = initScene();
+      scene = sceneSetup.scene;
+      camera = sceneSetup.camera;
+      renderer = sceneSetup.renderer;
+      controls = sceneSetup.controls;
+    }
+
+    currentData = data;
 
     nodeLabels = await displayNodes(scene, data, camera);
     edgeWeights = displayEdges(scene, data, camera);
@@ -35,22 +45,25 @@ async function init(data) {
     await addTreesAround(scene, data);
     updateSnowEffect = createSnow(scene);
 
-    function animate() {
-      requestAnimationFrame(animate);
-      updateSnowEffect();
-      nodeLabels.forEach((labelMesh) => {
-        labelMesh.quaternion.copy(camera.quaternion);
-      });
-      edgeWeights.forEach((textMesh) => {
-        textMesh.quaternion.copy(camera.quaternion);
-      });
-      controls.update();
-      renderer.render(scene, camera);
-    }
-    animate();
-
+    // Cập nhật UI
     populateNodeDropdowns(data);
-    console.log("Scene initialized. Waiting for user interaction.");
+
+    // Nếu đây là lần đầu khởi tạo, setup animation loop
+    if (!renderer.info.autoUpdate) {
+      function animate() {
+        requestAnimationFrame(animate);
+        updateSnowEffect();
+        nodeLabels.forEach((labelMesh) => {
+          labelMesh.quaternion.copy(camera.quaternion);
+        });
+        edgeWeights.forEach((textMesh) => {
+          textMesh.quaternion.copy(camera.quaternion);
+        });
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
   } catch (error) {
     console.error("Initialization error:", error);
   }

@@ -1,3 +1,5 @@
+import { MinPriorityQueue } from "@datastructures-js/priority-queue";
+
 export function johnson(graph) {
   const { nodes, edges } = graph;
 
@@ -58,43 +60,41 @@ function dijkstraWithPaths(graph, start) {
   const previous = {};
   const paths = {};
   const visited = new Set();
-  const queue = [];
 
   graph.nodes.forEach((node) => {
     distances[node.id] = node.id === start ? 0 : Infinity;
     previous[node.id] = null;
-    queue.push(node.id);
     paths[node.id] = [];
   });
 
-  while (queue.length > 0) {
-    const currentNode = queue.reduce((minNode, node) =>
-      distances[node] < distances[minNode] ? node : minNode
-    );
+  const pq = new MinPriorityQueue((node) => node.distance);
+  pq.enqueue({ id: start, distance: 0 });
 
-    queue.splice(queue.indexOf(currentNode), 1);
+  while (!pq.isEmpty()) {
+    const { id: currentNode } = pq.dequeue();
+
+    if (visited.has(currentNode)) continue;
     visited.add(currentNode);
 
     const neighbors = graph.edges
       .filter(
         (edge) => edge.source === currentNode || edge.target === currentNode
       )
-      .map((edge) => (edge.source === currentNode ? edge.target : edge.source));
+      .map((edge) => ({
+        id: edge.source === currentNode ? edge.target : edge.source,
+        weight: edge.weight,
+      }));
 
-    neighbors.forEach((neighbor) => {
+    for (const { id: neighbor, weight } of neighbors) {
       if (!visited.has(neighbor)) {
-        const edge = graph.edges.find(
-          (e) =>
-            (e.source === currentNode && e.target === neighbor) ||
-            (e.target === currentNode && e.source === neighbor)
-        );
-        const alt = distances[currentNode] + edge.weight;
+        const alt = distances[currentNode] + weight;
         if (alt < distances[neighbor]) {
           distances[neighbor] = alt;
           previous[neighbor] = currentNode;
+          pq.enqueue({ id: neighbor, distance: alt });
         }
       }
-    });
+    }
   }
 
   Object.keys(previous).forEach((node) => {
@@ -114,44 +114,42 @@ export function dijkstra(graph, start, end = null) {
   const distances = {};
   const previous = {};
   const visited = new Set();
-  const queue = [];
 
   graph.nodes.forEach((node) => {
     distances[node.id] = node.id === start ? 0 : Infinity;
     previous[node.id] = null;
-    queue.push(node.id);
   });
 
-  while (queue.length > 0) {
-    const currentNode = queue.reduce((minNode, node) =>
-      distances[node] < distances[minNode] ? node : minNode
-    );
+  const pq = new MinPriorityQueue((node) => node.distance);
+  pq.enqueue({ id: start, distance: 0 });
 
+  while (!pq.isEmpty()) {
+    const { id: currentNode } = pq.dequeue();
+
+    if (visited.has(currentNode)) continue;
     if (end && currentNode === end) break;
 
-    queue.splice(queue.indexOf(currentNode), 1);
     visited.add(currentNode);
 
     const neighbors = graph.edges
       .filter(
         (edge) => edge.source === currentNode || edge.target === currentNode
       )
-      .map((edge) => (edge.source === currentNode ? edge.target : edge.source));
+      .map((edge) => ({
+        id: edge.source === currentNode ? edge.target : edge.source,
+        weight: edge.weight,
+      }));
 
-    neighbors.forEach((neighbor) => {
+    for (const { id: neighbor, weight } of neighbors) {
       if (!visited.has(neighbor)) {
-        const edge = graph.edges.find(
-          (e) =>
-            (e.source === currentNode && e.target === neighbor) ||
-            (e.target === currentNode && e.source === neighbor)
-        );
-        const alt = distances[currentNode] + edge.weight;
+        const alt = distances[currentNode] + weight;
         if (alt < distances[neighbor]) {
           distances[neighbor] = alt;
           previous[neighbor] = currentNode;
+          pq.enqueue({ id: neighbor, distance: alt });
         }
       }
-    });
+    }
   }
 
   if (end) {
@@ -160,9 +158,9 @@ export function dijkstra(graph, start, end = null) {
       path.unshift(at);
     }
     return path.length > 1 ? path : null;
-  } else {
-    return distances;
   }
+
+  return distances;
 }
 
 export function floydWarshall(graph) {

@@ -26,7 +26,6 @@ export function applyForceDirectedLayout(data) {
     node.y = Math.random() * height - height / 2;
   });
 
-  // Force simulation logic (same as in original code)
   for (let iter = 0; iter < iterations; iter++) {
     data.nodes.forEach((nodeA) => {
       nodeA.vx = 0;

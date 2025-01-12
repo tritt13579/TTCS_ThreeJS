@@ -137,6 +137,7 @@ export function createSnow(scene) {
 
   // Tạo hệ thống hạt tuyết dưới dạng sprite
   const snowParticles = new THREE.Points(snowGeometry, snowMaterial);
+  snowParticles.name = "snowParticles";
   scene.add(snowParticles);
 
   // Hàm cập nhật vị trí các hạt tuyết trong mỗi frame

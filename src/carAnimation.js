@@ -4,24 +4,29 @@ import * as THREE from "three";
 export async function animateCar(scene, data, path) {
   const carLoader = new GLTFLoader();
   let car;
-  let baseSpeed = 1.2;
+  let baseSpeed = 1.3;
   let speedMultiplier = 1;
 
   // Get speed control elements
   const speedControl = document.getElementById("speed-control");
-  const speedValue = document.getElementById("speed-value");
+
+  const savedSpeed = localStorage.getItem("carAnimationSpeed");
+
+  if (savedSpeed) {
+    speedMultiplier = parseFloat(savedSpeed);
+    speedControl.value = savedSpeed; // Cập nhật giá trị của slider
+  }
 
   // Update speed multiplier when slider changes
   speedControl.addEventListener("input", (e) => {
     speedMultiplier = parseFloat(e.target.value);
-    speedValue.textContent = `${speedMultiplier}x`;
+    localStorage.setItem("carAnimationSpeed", e.target.value);
   });
 
   // Xóa xe cũ trước khi tạo xe mới
   const existingCar = scene.getObjectByName("animatedCar");
   if (existingCar) {
     scene.remove(existingCar);
-    console.log("Old car removed.");
   }
 
   // Load the 3D car model
@@ -67,8 +72,7 @@ export async function animateCar(scene, data, path) {
       new THREE.Vector3(targetNode.position.x, 5, targetNode.position.z)
     );
 
-    // Giảm số điểm trên đường cong để tăng tốc độ
-    const curvePoints = curve.getPoints(100); // Giảm từ 200 xuống 100 điểm
+    const curvePoints = curve.getPoints(100);
     pathEdges.push(...curvePoints);
   }
 

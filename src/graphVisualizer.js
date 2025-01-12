@@ -121,3 +121,41 @@ export function displayEdges(scene, data, camera) {
   });
   return edgeWeights; // Trả về mảng trọng số cạnh
 }
+
+export function cleanupGraph(scene) {
+  // Xóa tất cả các node labels
+  nodeLabels.forEach((label) => {
+    scene.remove(label);
+    label.geometry.dispose();
+    label.material.dispose();
+  });
+  nodeLabels = [];
+
+  // Xóa tất cả edge weights
+  edgeWeights.forEach((weight) => {
+    scene.remove(weight);
+    weight.geometry.dispose();
+    weight.material.dispose();
+  });
+  edgeWeights = [];
+
+  // Xóa tất cả house models và edges
+  scene.children = scene.children.filter((child) => {
+    if (child.type === "Line" || child.type === "Group") {
+      if (child.geometry) child.geometry.dispose();
+      if (child.material) child.material.dispose();
+      return false;
+    }
+    return true;
+  });
+
+  const snowParticles = scene.getObjectByName("snowParticles");
+  if (snowParticles) {
+    scene.remove(snowParticles);
+    snowParticles.geometry.dispose();
+    snowParticles.material.dispose();
+    if (snowParticles.material.map) {
+      snowParticles.material.map.dispose();
+    }
+  }
+}
